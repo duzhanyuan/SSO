@@ -106,9 +106,12 @@ func Login(userName string, timestamp string) (string, string, int) {
 	keyStr := hex.EncodeToString(key)
 	client := myredis.ClusterClient(keyStr)
 	client.Set(keyStr, userName, 0)
+	fmt.Printf("key", key)
 	bStr := keyStr + ":" + userName
+	fmt.Println("bStr", bStr)
 	B := util.EncryptString(bStr, []byte(serverPrivateKey))
 	monitor.IncrCount()
+	fmt.Println("A, B", A, B)
 	return A, B, errormap.Success
 }
 
@@ -124,7 +127,9 @@ func Apply(service, TGT, D string) (string, string, int) {
 		return "", "", errormap.NotExist
 	}
 	service_key, _ := hex.DecodeString(service_key_str)
+	fmt.Println("TGT", TGT)
 	B := util.DecryptString(TGT, []byte(serverPrivateKey))
+	fmt.Println("bstr B", B)
 	bs := strings.Split(B, ":")
 	if len(bs) != 2 {
 		fmt.Println("illegal B")
@@ -138,6 +143,7 @@ func Apply(service, TGT, D string) (string, string, int) {
 
 	//here assume not time-out
 	d := util.DecryptString(D, key)
+	fmt.Println("d", d)
 	ds := strings.Split(d, ":")
 	if len(ds) != 2 {
 		fmt.Println("illegal D")
@@ -159,24 +165,37 @@ func Apply(service, TGT, D string) (string, string, int) {
 	return E, F, errormap.Success
 }
 
-func Logout(username, timestamp string) int {
-	user := User{}
-	exist := mongodb.Exec(userTable, func(c *mgo.Collection) error {
-		return c.Find(bson.M{"username": username}).One(&user)
-	})
-	if !exist {
-		return errormap.NotExist
+func Logout(TGT, timestamp string) int {
+	fmt.Println("in logout", TGT, timestamp)
+	//user := User{}
+	/* exist := mongodb.Exec(userTable, func(c *mgo.Collection) error {*/
+	//return c.Find(bson.M{"": username}).One(&user)
+	//})
+	//if !exist {
+	//fmt.Println("fuck1")
+	//return errormap.NotExist
+	//}
+	B := util.DecryptString(TGT, []byte(serverPrivateKey))
+	fmt.Println("bstr B", B)
+	bs := strings.Split(B, ":")
+	if len(bs) != 2 {
+		fmt.Println("illegal B")
+		return errormap.Exist
 	}
+	key_str := bs[0]
+	key, _ := hex.DecodeString(key_str)
 
-	client := myredis.ClusterClient(username)
-	session_key_str, err := client.Get(username).Result()
+	fmt.Println("bs1:", bs[0])
+	client := myredis.ClusterClient(bs[0])
+	_, err := client.Get(bs[0]).Result()
 	if err != nil {
+		fmt.Println("fuck2")
 		return errormap.NotExist
 	}
-	session_key, _ := hex.DecodeString(session_key_str)
-	if !util.CheckTimestamp(timestamp, session_key) {
+	if !util.CheckTimestamp(timestamp, key) {
+		fmt.Println("fuck3")
 		return errormap.NotExist
 	}
-	client.Del(username)
+	client.Del(bs[0])
 	return errormap.Success
 }

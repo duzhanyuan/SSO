@@ -31,6 +31,7 @@ func Service_login(E string, G string) (string, int) {
 	if !util.CheckTimestamp(gs[1], session_key) {
 		return "", errormap.IllegalTS
 	}
+	fmt.Println("session key", session_key)
 	return util.GenTimestamp(session_key), errormap.Success
 }
 

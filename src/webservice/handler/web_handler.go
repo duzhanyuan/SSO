@@ -41,9 +41,6 @@ func login(c *gin.Context) {
 	if code != errormap.Success {
 		ginutil.ResponseJSONFailed(c, ginutil.JSONError{Code: code, Msg: errormap.ErrorMsg(code)})
 	} else {
-		data := Data{
-			Key: key,
-		}
-		ginutil.ResponseJSONSuccess(c, data)
+		c.JSON(200, gin.H{"H": key})
 	}
 }

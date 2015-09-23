@@ -184,7 +184,7 @@ func (c *Client) Login(username string, passwd string) {
 
 	sessionKey, _ := hex.DecodeString(A)
 	c1, _ := rc4.NewCipher(hashed_passwd[:])
-	c1.XORKeyStream(c.SessionKey, c.SessionKey)
+	c1.XORKeyStream(sessionKey, sessionKey)
 
 	c.Key = hashed_passwd[:]
 	c.SessionKey = sessionKey
@@ -198,10 +198,10 @@ func (c *Client) ApplyService(service string) {
 	}
 
 	type Data2 struct {
-		H string `json:h`
+		H string `json:H`
 	}
 
-	fmt.Println(c.SessionKey)
+	fmt.Println("session", c.SessionKey)
 	timestamp := genTimestamp(c.SessionKey)
 	d_str := c.Name + ":" + timestamp
 	fmt.Println("dstr", d_str)
@@ -234,6 +234,8 @@ func (c *Client) ApplyService(service string) {
 	json.Unmarshal([]byte(ret2), &data2)
 
 	H := data2.H
+	fmt.Println("h:", H)
+	fmt.Println("service session key", service_session_key)
 	if checkTimestamp(H, service_session_key) {
 		fmt.Println("suc")
 		return
@@ -247,9 +249,11 @@ func (c *Client) ApplyService(service string) {
 func (c *Client) Logout() {
 	timestamp := genTimestamp(c.Key)
 	params := make(map[string]string)
-	params["username"] = c.Name
+	params["TGT"] = c.TGT
 	params["timestamp"] = timestamp
-	doPost("logout", params)
+	ret := doPost("logout", params)
+	fmt.Println("ret:", ret)
+
 	//res := server_logout("logout", params)
 }
 func main() {
@@ -257,4 +261,5 @@ func main() {
 	//client.Register("1@qq.com", "111")
 	client.Login("1@qq.com", "111")
 	client.ApplyService("test1")
+	client.Logout()
 }

@@ -99,14 +99,14 @@ func login(c *gin.Context) {
 
 func logout(c *gin.Context) {
 	type FormData struct {
-		UserName  string `form:"username"`
+		TGT       string `form:"TGT"`
 		TimeStamp string `form:"timestamp"`
 	}
 	var form FormData
 	if c.Bind(&form) != nil {
 		return
 	}
-	code := user.Logout(form.UserName, form.TimeStamp)
+	code := user.Logout(form.TGT, form.TimeStamp)
 	if code != errormap.Success {
 		ginutil.ResponseJSONFailed(c, ginutil.JSONError{Code: code, Msg: errormap.ErrorMsg(code)})
 	} else {
