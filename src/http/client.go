@@ -60,6 +60,13 @@ func encrypt_string(str string, key []byte) string {
 	return hex.EncodeToString(bytes)
 }
 
+func decrypt_string(str string, key []byte) string {
+	bytes, _ := hex.DecodeString(str)
+	c, _ := rc4.NewCipher(key)
+	c.XORKeyStream(bytes, bytes)
+	return string(bytes)
+}
+
 func doPost(op string, params map[string]string) string {
 	addr := "http://127.0.0.1:8000/user/"
 	if op == "register" {
@@ -68,6 +75,43 @@ func doPost(op string, params map[string]string) string {
 		addr = addr + "login"
 	} else if op == "logout" {
 		addr = addr + "logout"
+	} else if op == "apply_service" {
+		addr = addr + "apply_service"
+	} else {
+		fmt.Println("undefined")
+	}
+	vals := url.Values{}
+	for key, val := range params {
+		tmp := []string{}
+		tmp = append(tmp, val)
+		vals[key] = tmp
+
+	}
+	resp, err := http.PostForm(addr, vals)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	fmt.Println(string(body))
+	return string(body)
+}
+
+func doPost2(op string, params map[string]string) string {
+	addr := "http://127.0.0.1:8001/user/"
+	if op == "register" {
+		addr = addr + "register"
+	} else if op == "login" {
+		addr = addr + "login"
+	} else if op == "logout" {
+		addr = addr + "logout"
+	} else if op == "apply_service" {
+		addr = addr + "apply_service"
 	} else {
 		fmt.Println("undefined")
 	}
@@ -141,6 +185,53 @@ func (c *Client) Login(username string, passwd string) {
 	c.Key = hashed_passwd[:]
 	c.SessionKey = sessionKey
 	c.TGT = B
+}
+
+func (c *Client) ApplyService(service string) {
+	type Data struct {
+		E string `json:e`
+		F string `json:f`
+	}
+
+	type Data2 struct {
+		H string `json:h`
+	}
+
+	timestamp := genTimestamp(c.SessionKey)
+	d_str := c.Name + ":" + timestamp
+	D := encrypt_string(d_str, c.SessionKey)
+
+	body := make(map[string]string)
+	body["service"] = service
+	body["TGT"] = c.TGT
+	body["D"] = D
+
+	data := Data{}
+	ret := doPost("apply_service", body)
+	json.Unmarshal([]byte(ret), &data)
+
+	E, F := data.E, data.F
+
+	service_session_key := []byte(decrypt_string(F, c.SessionKey))
+	timestamp = genTimestamp(service_session_key)
+	G := c.Name + ":" + timestamp
+	G = encrypt_string(G, service_session_key)
+	body2 := make(map[string]string)
+	body2["E"] = E
+	body2["G"] = G
+
+	data2 := Data2{}
+	//here the url should point to service
+	ret2 := doPost2("login", body2)
+	json.Unmarshal([]byte(ret2), &data2)
+
+	H := data2.H
+	if checkTimestamp(H, service_session_key) {
+		return
+	} else {
+		return
+	}
+
 }
 
 func (c *Client) Logout() {
