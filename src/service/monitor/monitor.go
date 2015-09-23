@@ -24,7 +24,7 @@ func Work() {
 		time.Sleep(time.Second * 5)
 		mu.Lock()
 		cntList.PushBack(count)
-		if len(cntList) > maxLen {
+		if cntList.Len() > maxLen {
 			it := cntList.Front()
 			cntList.Remove(it)
 		}
@@ -42,7 +42,7 @@ func GetAllData() []int64 {
 	data := []int64{}
 	mu.Lock()
 	for it := cntList.Front(); it != nil; it = it.Next() {
-		data = append(data, it.Value)
+		data = append(data, (it.Value).(int64))
 	}
 	mu.Unlock()
 	return data
