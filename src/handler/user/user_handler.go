@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"model/user"
 	"service/errormap"
+	"service/monitor"
 	"util"
 	"util/ginutil"
 )
@@ -14,6 +15,18 @@ func Register(router *gin.RouterGroup) {
 	group.POST("/register_service", registerService)
 	group.POST("/login", login)
 	group.POST("/logout", logout)
+	group.POST("/monitor", performance)
+}
+
+func performance(c *gin.Context) {
+	type Data struct {
+		Nodes []int64 "json:nodes"
+	}
+	nodes := monitor.GetAllData()
+	data := Data{
+		Nodes: nodes,
+	}
+	ginutil.ResponseJSONSuccess(c, data)
 }
 
 func register(c *gin.Context) {
@@ -49,7 +62,7 @@ func registerService(c *gin.Context) {
 		return
 	}
 
-	key, code := user.Register(form.UserName, form.Password)
+	key, code := user.RegisterService(form.Name)
 	if code != errormap.Success {
 		ginutil.ResponseJSONFailed(c, ginutil.JSONError{Code: code, Msg: errormap.ErrorMsg(code)})
 	} else {
@@ -82,7 +95,7 @@ func login(c *gin.Context) {
 			A: a,
 			B: b,
 		}
-		util.Authorsize(c, userID, token)
+		//util.Authorsize(c, userID, token)
 		ginutil.ResponseJSONSuccess(c, data)
 	}
 }
