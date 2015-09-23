@@ -5,7 +5,6 @@ import (
 	"model/user"
 	"service/errormap"
 	"service/monitor"
-	"util"
 	"util/ginutil"
 )
 
@@ -101,17 +100,18 @@ func login(c *gin.Context) {
 }
 
 func logout(c *gin.Context) {
-	type Data struct {
-		Token string
+	type FormData struct {
+		UserName  string `form:"username"`
+		TimeStamp string `form:"timestamp"`
 	}
-	userID := util.GetUserID(c)
-	code := user.Logout(userID)
+	var form FormData
+	if c.Bind(&form) != nil {
+		return
+	}
+	code := user.Logout(form.UserName, form.TimeStamp)
 	if code != errormap.Success {
 		ginutil.ResponseJSONFailed(c, ginutil.JSONError{Code: code, Msg: errormap.ErrorMsg(code)})
 	} else {
-		data := Data{
-			Token: "klsj",
-		}
-		ginutil.ResponseJSONSuccess(c, data)
+		ginutil.ResponseJSONSuccess(c, nil)
 	}
 }

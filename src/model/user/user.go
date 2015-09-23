@@ -3,6 +3,7 @@ package user
 import (
 	"crypto/rc4"
 	"encoding/hex"
+	"fmt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"math/rand"
@@ -12,6 +13,7 @@ import (
 	"service/myredis"
 	"time"
 
+	"strings"
 	"util"
 )
 
@@ -110,12 +112,69 @@ func Login(userName string, timestamp string) (string, string, int) {
 	return A, B, errormap.Success
 }
 
-func Logout(userID string) int {
+func Apply(service, TGT, D string) (string, string, int) {
+	client := myredis.ClusterClient(service)
+	//service_key_str := client.
+	service_key_str, err := client.Get(service).Result()
+
+	//service_key_str, exist := service_db[service]
+	if err != nil {
+		fmt.Println("service dont exist")
+		return "", "", errormap.NotExist
+	}
+	service_key, _ := hex.DecodeString(service_key_str)
+	B := util.DecryptString(TGT, []byte(serverPrivateKey))
+	bs := strings.Split(B, ":")
+	if len(bs) != 2 {
+		fmt.Println("illegal B")
+		return "", "", errormap.Exist
+	}
+	key_str := bs[0]
+	key, _ := hex.DecodeString(key_str)
+	username := bs[1]
+	//check from redis if key_str time_out
+
+	//here assume not time-out
+	d := util.DecryptString(D, key)
+	ds := strings.Split(d, ":")
+	if len(ds) != 2 {
+		fmt.Println("illegal D")
+		return "", "", errormap.NotExist
+	}
+	if !util.CheckTimestamp(ds[1], key) {
+		fmt.Println("illegal timestamp")
+		return "", "", errormap.NotExist
+	}
+
+	service_session_key := util.GenRandomBytes(16)
+	service_session_key_str := hex.EncodeToString(service_session_key)
+	E := username + ":" + service_session_key_str
+	E = util.EncryptString(E, service_key)
+
+	c, _ := rc4.NewCipher(key)
+	c.XORKeyStream(service_session_key, service_session_key)
+	F := hex.EncodeToString(service_session_key)
+	return E, F, errormap.Success
+}
+
+func Logout(username, timestamp string) int {
 	user := User{}
-	exist := mongodb.FindByID(userTable, userID, &user)
+	exist := mongodb.Exec(userTable, func(c *mgo.Collection) error {
+		return c.Find(bson.M{"username": username}).One(&user)
+	})
 	if !exist {
 		return errormap.NotExist
 	}
-	//TODO: update redis
+
+	client := myredis.ClusterClient(username)
+	session_key_str, err := client.Get(username).Result()
+	if err != nil {
+		return errormap.NotExist
+	}
+	session_key, _ := hex.DecodeString(session_key_str)
+	if !util.CheckTimestamp(timestamp, session_key) {
+		return errormap.NotExist
+	}
+	client.Del(username)
 	return errormap.Success
 }

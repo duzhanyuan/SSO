@@ -57,6 +57,13 @@ func EncryptString(str string, key []byte) string {
 	return hex.EncodeToString(bytes)
 }
 
+func DecryptString(str string, key []byte) string {
+	bytes, _ := hex.DecodeString(str)
+	c, _ := rc4.NewCipher(key)
+	c.XORKeyStream(bytes, bytes)
+	return string(bytes)
+}
+
 func Hash(s string) uint32 {
 	h := fnv.New32a()
 	h.Write([]byte(s))
