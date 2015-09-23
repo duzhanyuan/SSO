@@ -5,6 +5,7 @@ import (
 	"handler/user"
 	"net/http"
 	"service/mongodb"
+	"service/monitor"
 	"service/myredis"
 )
 
@@ -45,8 +46,10 @@ func regRouter(router *gin.Engine) {
 
 func main() {
 	initDb()
+	go monitor.Work()
 	router := gin.Default()
 	regRouter(router)
+
 	listenAddr := "127.0.0.1:8000"
 	err := http.ListenAndServe(listenAddr, router)
 	if err != nil {

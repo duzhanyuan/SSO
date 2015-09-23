@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"service"
 	"service/mongodb"
+	"service/monitor"
 	"service/myredis"
 	"time"
 	//"util"
@@ -85,6 +86,7 @@ func Login(userName string, password string) (string, string, int) {
 	//PoolSize: 100,
 	/*})*/
 	client.Set(token, user.UserID, 0)
+	monitor.IncrCount()
 
 	return user.UserID, token, service.Success
 }
