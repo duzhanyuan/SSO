@@ -144,12 +144,12 @@ func (c *Client) Login(username string, passwd string) {
 }
 
 func (c *Client) Logout() {
-	timestamp := genTimestamp(client_key)
+	timestamp := genTimestamp(c.Key)
 	params := make(map[string]string)
 	params["username"] = c.Name
 	params["timestamp"] = timestamp
-	res := server_logout("logout", params)
-	fmt.Println(res)
+	doPost("logout", params)
+	//res := server_logout("logout", params)
 }
 func main() {
 	client := Client{}
