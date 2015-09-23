@@ -20,7 +20,7 @@ func main() {
 	router := gin.Default()
 	regRouter(router)
 	//listenAddr := "127.0.0.1:10000/user/register_service"
-	addr := "http://127.0.0.1:10000/user/register_service"
+	addr := "http://127.0.0.1:8000/user/register_service"
 	resp, err := http.PostForm(addr, url.Values{"name": {"test1"}})
 	type Data struct {
 		Key string `json:"key"`

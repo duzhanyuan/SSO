@@ -68,7 +68,7 @@ func decrypt_string(str string, key []byte) string {
 }
 
 func doPost(op string, params map[string]string) string {
-	addr := "http://127.0.0.1:10000/user/"
+	addr := "http://127.0.0.1:8000/user/"
 	if op == "register" {
 		addr = addr + "register"
 	} else if op == "login" {
@@ -102,7 +102,7 @@ func doPost(op string, params map[string]string) string {
 }
 
 func doPost2(op string, params map[string]string) string {
-	addr := "http://127.0.0.1:9999/web_service/"
+	addr := "http://127.0.0.1:8001/web_service/"
 	if op == "register" {
 		addr = addr + "register"
 	} else if op == "login" {
