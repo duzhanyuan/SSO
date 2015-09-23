@@ -1,6 +1,7 @@
 package user
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"model/user"
 	"service/errormap"
@@ -15,11 +16,12 @@ func Register(router *gin.RouterGroup) {
 	group.POST("/login", login)
 	group.POST("/logout", logout)
 	group.GET("/monitor", performance)
+	group.POST("/apply_service", applyService)
 }
 
 func performance(c *gin.Context) {
 	type Data struct {
-		Nodes []int64 "json:nodes"
+		Nodes []int64 `json:"nodes"`
 	}
 	nodes := monitor.GetAllData()
 	data := Data{
@@ -61,14 +63,14 @@ func registerService(c *gin.Context) {
 		return
 	}
 
+	fmt.Println("formname", form.Name)
 	key, code := user.RegisterService(form.Name)
+	fmt.Println("key:", key, code)
 	if code != errormap.Success {
 		ginutil.ResponseJSONFailed(c, ginutil.JSONError{Code: code, Msg: errormap.ErrorMsg(code)})
 	} else {
-		data := Data{
-			Key: key,
-		}
-		ginutil.ResponseJSONSuccess(c, data)
+		c.JSON(200, gin.H{"key": key})
+		//ginutil.ResponseJSONSuccess(c, data)
 	}
 }
 
@@ -90,12 +92,8 @@ func login(c *gin.Context) {
 	if code != errormap.Success {
 		ginutil.ResponseJSONFailed(c, ginutil.JSONError{Code: code, Msg: errormap.ErrorMsg(code)})
 	} else {
-		data := Data{
-			A: a,
-			B: b,
-		}
+		c.JSON(200, gin.H{"A": a, "B": b})
 		//util.Authorsize(c, userID, token)
-		ginutil.ResponseJSONSuccess(c, data)
 	}
 }
 
@@ -114,4 +112,25 @@ func logout(c *gin.Context) {
 	} else {
 		ginutil.ResponseJSONSuccess(c, nil)
 	}
+}
+
+func applyService(c *gin.Context) {
+	type FormData struct {
+		Service string `json:"Service"`
+		TGT     string `json:"TGT"`
+		D       string `json:"D"`
+	}
+	var form FormData
+	if c.Bind(&form) != nil {
+		return
+	}
+	fmt.Println("before ef", form.Service, form.TGT, form.D)
+	E, F, code := user.Apply(form.Service, form.TGT, form.D)
+	if code != errormap.Success {
+		ginutil.ResponseJSONFailed(c, ginutil.JSONError{Code: code, Msg: errormap.ErrorMsg(code)})
+	} else {
+		fmt.Println(E, F, "EF")
+		c.JSON(200, gin.H{"E": E, "F": F})
+	}
+
 }

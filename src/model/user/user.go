@@ -65,12 +65,12 @@ func Register(userName, pwdEncrypted string) int {
 
 func RegisterService(name string) (string, int) {
 	service := Service{}
-	exist := mongodb.Exec(serviceTable, func(c *mgo.Collection) error {
-		return c.Find(bson.M{"servicename": name}).One(&service)
-	})
-	if exist {
-		return "", errormap.Exist
-	}
+	/* exist := mongodb.Exec(serviceTable, func(c *mgo.Collection) error {*/
+	//return c.Find(bson.M{"servicename": name}).One(&service)
+	//})
+	//if exist {
+	//return "", errormap.Exist
+	/*}*/
 	key := util.GenRandomBytes(16)
 	keyStr := hex.EncodeToString(key)
 	service.ServiceID = bson.NewObjectId().Hex()
@@ -113,10 +113,11 @@ func Login(userName string, timestamp string) (string, string, int) {
 }
 
 func Apply(service, TGT, D string) (string, string, int) {
+	fmt.Println("ser:", service)
+
 	client := myredis.ClusterClient(service)
 	//service_key_str := client.
 	service_key_str, err := client.Get(service).Result()
-
 	//service_key_str, exist := service_db[service]
 	if err != nil {
 		fmt.Println("service dont exist")
@@ -131,6 +132,7 @@ func Apply(service, TGT, D string) (string, string, int) {
 	}
 	key_str := bs[0]
 	key, _ := hex.DecodeString(key_str)
+	fmt.Println("key:", key)
 	username := bs[1]
 	//check from redis if key_str time_out
 

@@ -67,7 +67,7 @@ func main() {
 	router := gin.Default()
 	regRouter(router)
 
-	listenAddr := "127.0.0.1:8000"
+	listenAddr := "127.0.0.1:10000"
 	err := http.ListenAndServe(listenAddr, router)
 	if err != nil {
 		panic(err)

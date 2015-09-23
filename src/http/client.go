@@ -68,7 +68,7 @@ func decrypt_string(str string, key []byte) string {
 }
 
 func doPost(op string, params map[string]string) string {
-	addr := "http://127.0.0.1:8000/user/"
+	addr := "http://127.0.0.1:10000/user/"
 	if op == "register" {
 		addr = addr + "register"
 	} else if op == "login" {
@@ -80,6 +80,7 @@ func doPost(op string, params map[string]string) string {
 	} else {
 		fmt.Println("undefined")
 	}
+	fmt.Println("1============")
 	vals := url.Values{}
 	for key, val := range params {
 		tmp := []string{}
@@ -92,6 +93,7 @@ func doPost(op string, params map[string]string) string {
 		fmt.Println(err)
 		return ""
 	}
+	fmt.Println("2============")
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -103,7 +105,7 @@ func doPost(op string, params map[string]string) string {
 }
 
 func doPost2(op string, params map[string]string) string {
-	addr := "http://127.0.0.1:8001/user/"
+	addr := "http://127.0.0.1:9999/web_service/"
 	if op == "register" {
 		addr = addr + "register"
 	} else if op == "login" {
@@ -175,8 +177,10 @@ func (c *Client) Login(username string, passwd string) {
 	data := Data{}
 	ret := doPost("login", body)
 	json.Unmarshal([]byte(ret), &data)
+	fmt.Println("ret", ret)
 
 	A, B := data.A, data.B
+	fmt.Println(A, B, "===")
 
 	sessionKey, _ := hex.DecodeString(A)
 	c1, _ := rc4.NewCipher(hashed_passwd[:])
@@ -189,20 +193,24 @@ func (c *Client) Login(username string, passwd string) {
 
 func (c *Client) ApplyService(service string) {
 	type Data struct {
-		E string `json:e`
-		F string `json:f`
+		E string `json:E`
+		F string `json:F`
 	}
 
 	type Data2 struct {
 		H string `json:h`
 	}
 
+	fmt.Println(c.SessionKey)
 	timestamp := genTimestamp(c.SessionKey)
 	d_str := c.Name + ":" + timestamp
+	fmt.Println("dstr", d_str)
 	D := encrypt_string(d_str, c.SessionKey)
+	fmt.Println("D:", D)
 
 	body := make(map[string]string)
-	body["service"] = service
+	body["Service"] = service
+	fmt.Println("client", service)
 	body["TGT"] = c.TGT
 	body["D"] = D
 
@@ -227,8 +235,10 @@ func (c *Client) ApplyService(service string) {
 
 	H := data2.H
 	if checkTimestamp(H, service_session_key) {
+		fmt.Println("suc")
 		return
 	} else {
+		fmt.Println("fail")
 		return
 	}
 
@@ -246,4 +256,5 @@ func main() {
 	client := Client{}
 	//client.Register("1@qq.com", "111")
 	client.Login("1@qq.com", "111")
+	client.ApplyService("test1")
 }
