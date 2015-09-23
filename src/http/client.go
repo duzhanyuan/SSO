@@ -80,7 +80,6 @@ func doPost(op string, params map[string]string) string {
 	} else {
 		fmt.Println("undefined")
 	}
-	fmt.Println("1============")
 	vals := url.Values{}
 	for key, val := range params {
 		tmp := []string{}
@@ -93,14 +92,12 @@ func doPost(op string, params map[string]string) string {
 		fmt.Println(err)
 		return ""
 	}
-	fmt.Println("2============")
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		return ""
 	}
-	fmt.Println(string(body))
 	return string(body)
 }
 
@@ -247,14 +244,12 @@ func (c *Client) ApplyService(service string) {
 }
 
 func (c *Client) Logout() {
-	timestamp := genTimestamp(c.Key)
+	timestamp := genTimestamp(c.SessionKey)
 	params := make(map[string]string)
 	params["TGT"] = c.TGT
 	params["timestamp"] = timestamp
 	ret := doPost("logout", params)
 	fmt.Println("ret:", ret)
-
-	//res := server_logout("logout", params)
 }
 func main() {
 	client := Client{}
