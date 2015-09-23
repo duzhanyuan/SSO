@@ -6,7 +6,8 @@ import "net/url"
 import "io/ioutil"
 
 func doPost(op, id, key string) {
-	addr := "http://127.0.0.1:8001/user/"
+	//addr := "http://127.0.0.1:8001/user/"
+	addr := "http://121.201.58.74:8000/user/"
 	if op == "reg" {
 		addr = addr + "register"
 	} else if op == "login" {

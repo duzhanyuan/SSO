@@ -1,31 +1,38 @@
 package user
 
 import (
-	"crypto/sha1"
+	"crypto/rc4"
+	"encoding/hex"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	//"gopkg.in/redis.v3"
-	"fmt"
-	"io"
 	"math/rand"
-	"service"
+	"service/errormap"
 	"service/mongodb"
 	"service/monitor"
 	"service/myredis"
 	"time"
-	//"util"
+
+	"util"
 )
 
 const (
-	tokenLen  = 20
-	userTable = "userTable"
-	pwdSalt   = "ZG1sMmFXRnVJR2x6SUdFZ1oyOXZaQ0JuYVhKcw=="
+	tokenLen         = 20
+	keyLen           = 16
+	serverPrivateKey = "abcdef"
+	userTable        = "userTable"
+	serviceTable     = "serviceTable"
 )
 
 type User struct {
 	UserID       string `json:"userid" bson:"_id,omitempty"`
 	UserName     string `json:"username" bson:"username"`
 	PwdEncrypted string `json:"password" bson:"password"`
+}
+
+type Service struct {
+	ServiceID   string `json:"serviceid" bson:"_id,omitempty"`
+	ServiceName string `json:"servicename" bson:"servicename"`
+	ServiceKey  string `json:"servicekey" bson:"servicekey"`
 }
 
 func newToken() string {
@@ -37,67 +44,78 @@ func newToken() string {
 	return token
 }
 
-func passwordEncrypt(password string) string {
-	pass := password + pwdSalt
-	sh := sha1.New()
-	_, err := io.WriteString(sh, pass)
-	if err != nil {
-		panic(err)
-	}
-	result := sh.Sum(nil)
-	return string(result)
-}
-
-func Register(userName, password string) (*User, int) {
+func Register(userName, pwdEncrypted string) int {
 	user := User{}
 	exist := mongodb.Exec(userTable, func(c *mgo.Collection) error {
 		return c.Find(bson.M{"username": userName}).One(&user)
 	})
 	if exist {
-		return nil, service.Exist
+		return errormap.Exist
 	}
 	user.UserID = bson.NewObjectId().Hex()
 	user.UserName = userName
-	user.PwdEncrypted = passwordEncrypt(password)
+	user.PwdEncrypted = pwdEncrypted
 	mongodb.Exec(userTable, func(c *mgo.Collection) error {
 		return c.Insert(user)
 	})
-	return &user, service.Success
+	return errormap.Success
 }
 
-func Login(userName string, password string) (string, string, int) {
-	fmt.Println(userName, "===========", password)
+func RegisterService(name string) (string, int) {
+	service := Service{}
+	exist := mongodb.Exec(serviceTable, func(c *mgo.Collection) error {
+		return c.Find(bson.M{"servicename": name}).One(&service)
+	})
+	if exist {
+		return "", errormap.Exist
+	}
+	key := util.GenRandomBytes(16)
+	keyStr := hex.EncodeToString(key)
+	service.ServiceID = bson.NewObjectId().Hex()
+	service.ServiceName = name
+	service.ServiceKey = keyStr
+	mongodb.Exec(serviceTable, func(c *mgo.Collection) error {
+		return c.Insert(service)
+	})
+	client := myredis.ClusterClient(name)
+	client.Set(name, keyStr, 0)
+	return keyStr, errormap.Success
+}
+
+func Login(userName string, timestamp string) (string, string, int) {
 	user := User{}
 	exist := mongodb.Exec(userTable, func(c *mgo.Collection) error {
 		return c.Find(bson.M{"username": userName}).One(&user)
 	})
 	if !exist {
-		return "", "", service.NotExist
+		return "", "", errormap.NotExist
 	}
-	if passwordEncrypt(password) != user.PwdEncrypted {
-		return "", "", service.PwdError
+	pwdBytes, _ := hex.DecodeString(user.PwdEncrypted)
+	if util.CheckTimestamp(timestamp, pwdBytes) == false {
+		return "", "", errormap.IllegalTS
 	}
-	token := newToken()
-	client := myredis.ClusterClient(token)
 
-	//client := myredis.Client()
-	/*client := redis.NewClient(&redis.Options{*/
-	//Addr:     "127.0.0.1:6379",
-	//DB:       0,
-	//PoolSize: 100,
-	/*})*/
-	client.Set(token, user.UserID, 0)
+	key := util.GenRandomBytes(keyLen)
+	c2, _ := rc4.NewCipher(pwdBytes)
+	encryptedKeys := make([]byte, keyLen)
+	c2.XORKeyStream(encryptedKeys, key)
+	A := hex.EncodeToString(encryptedKeys)
+
+	keyStr := hex.EncodeToString(key)
+	client := myredis.ClusterClient(keyStr)
+	client.Set(keyStr, userName, 0)
+	bStr := keyStr + ":" + userName
+	B := util.EncryptString(bStr, []byte(serverPrivateKey))
 	monitor.IncrCount()
-
-	return user.UserID, token, service.Success
+	return A, B, errormap.Success
 }
 
 func Logout(userID string) int {
 	user := User{}
 	exist := mongodb.FindByID(userTable, userID, &user)
 	if !exist {
-		return service.NotExist
+		return errormap.NotExist
 	}
 	//TODO: update redis
-	return service.Success
+	return errormap.Success
 }
