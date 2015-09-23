@@ -15,7 +15,7 @@ func Register(router *gin.RouterGroup) {
 	group.POST("/register_service", registerService)
 	group.POST("/login", login)
 	group.POST("/logout", logout)
-	group.POST("/monitor", performance)
+	group.GET("/monitor", performance)
 }
 
 func performance(c *gin.Context) {
