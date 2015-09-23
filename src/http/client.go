@@ -132,7 +132,6 @@ func doPost2(op string, params map[string]string) string {
 		fmt.Println(err)
 		return ""
 	}
-	fmt.Println(string(body))
 	return string(body)
 }
 
@@ -150,11 +149,6 @@ func (c *Client) Register(username string, passwd string) {
 	body = make(map[string]string)
 	body["username"] = username
 	body["password"] = hashed_passwd_str
-	//server_register(username, hashed_passwd_str)
-	for key, val := range body {
-		fmt.Println(key, val)
-	}
-
 	doPost("register", body)
 }
 
@@ -174,10 +168,8 @@ func (c *Client) Login(username string, passwd string) {
 	data := Data{}
 	ret := doPost("login", body)
 	json.Unmarshal([]byte(ret), &data)
-	fmt.Println("ret", ret)
 
 	A, B := data.A, data.B
-	fmt.Println(A, B, "===")
 
 	sessionKey, _ := hex.DecodeString(A)
 	c1, _ := rc4.NewCipher(hashed_passwd[:])
@@ -198,16 +190,12 @@ func (c *Client) ApplyService(service string) {
 		H string `json:H`
 	}
 
-	fmt.Println("session", c.SessionKey)
 	timestamp := genTimestamp(c.SessionKey)
 	d_str := c.Name + ":" + timestamp
-	fmt.Println("dstr", d_str)
 	D := encrypt_string(d_str, c.SessionKey)
-	fmt.Println("D:", D)
 
 	body := make(map[string]string)
 	body["Service"] = service
-	fmt.Println("client", service)
 	body["TGT"] = c.TGT
 	body["D"] = D
 
@@ -231,13 +219,9 @@ func (c *Client) ApplyService(service string) {
 	json.Unmarshal([]byte(ret2), &data2)
 
 	H := data2.H
-	fmt.Println("h:", H)
-	fmt.Println("service session key", service_session_key)
 	if checkTimestamp(H, service_session_key) {
-		fmt.Println("suc")
 		return
 	} else {
-		fmt.Println("fail")
 		return
 	}
 
@@ -249,7 +233,6 @@ func (c *Client) Logout() {
 	params["TGT"] = c.TGT
 	params["timestamp"] = timestamp
 	ret := doPost("logout", params)
-	fmt.Println("ret:", ret)
 }
 func main() {
 	client := Client{}
