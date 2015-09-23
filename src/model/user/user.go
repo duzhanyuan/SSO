@@ -5,7 +5,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	//"gopkg.in/redis.v3"
-	//"fmt"
+	"fmt"
 	"io"
 	"math/rand"
 	"service"
@@ -66,6 +66,7 @@ func Register(userName, password string) (*User, int) {
 }
 
 func Login(userName string, password string) (string, string, int) {
+	fmt.Println(userName, "===========", password)
 	user := User{}
 	exist := mongodb.Exec(userTable, func(c *mgo.Collection) error {
 		return c.Find(bson.M{"username": userName}).One(&user)

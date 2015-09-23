@@ -11,10 +11,12 @@ func doPost(op, id, key string) {
 		addr = addr + "register"
 	} else if op == "login" {
 		addr = addr + "login"
-	} else {
+	} else if op == "logout" {
 		addr = addr + "logout"
+	} else {
+		fmt.Println("undefined")
 	}
-	resp, err := http.PostForm(addr, url.Values{"key": {key}, "id": {id}})
+	resp, err := http.PostForm(addr, url.Values{"username": {id}, "password": {key}})
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -33,6 +35,7 @@ func main() {
 	var id string
 	var key string
 	for {
+		fmt.Println("please input:")
 		fmt.Scanf("%s %s %s", &op, &id, &key)
 		doPost(op, id, key)
 	}
