@@ -4,13 +4,15 @@ import (
 	"crypto/sha1"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"gopkg.in/redis.v3"
+	//"gopkg.in/redis.v3"
+	"fmt"
 	"io"
 	"math/rand"
 	"service"
 	"service/mongodb"
-	//"service/myredis"
+	"service/myredis"
 	"time"
+	"util"
 )
 
 const (
@@ -74,12 +76,15 @@ func Login(userName string, password string) (string, string, int) {
 		return "", "", service.PwdError
 	}
 	token := newToken()
+	client := myredis.ClusterClient(util.Hash(token))
+
 	//client := myredis.Client()
-	client := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		DB:       0,
-		PoolSize: 100,
-	})
+	/*client := redis.NewClient(&redis.Options{*/
+	//Addr:     "127.0.0.1:6379",
+	//DB:       0,
+	//PoolSize: 100,
+	/*})*/
+	fmt.Println(token, "=========", user.UserID)
 	client.Set(token, user.UserID, 0)
 
 	return user.UserID, token, service.Success

@@ -1,12 +1,14 @@
 package myredis
 
 import (
+	"fmt"
 	"gopkg.in/redis.v3"
 )
 
 var (
+	clusterSize  uint32
 	client       *redis.Client
-	redisClients map[int64]*redis.Client
+	redisClients map[uint32]*redis.Client
 )
 
 func Init(url string) {
@@ -17,11 +19,13 @@ func Init(url string) {
 	})
 }
 
-func InitCluster(urls map[int64]string) {
-	redisClients = make(map[string]*redis.Client)
+func InitCluster(urls map[uint32]string) {
+	tmp := len(urls)
+	clusterSize = (uint32)(tmp)
+	redisClients = make(map[uint32]*redis.Client)
 	for index, url := range urls {
 		redisClient := redis.NewClient(&redis.Options{
-			addr:     url,
+			Addr:     url,
 			DB:       0,
 			PoolSize: 100,
 		})
@@ -30,13 +34,13 @@ func InitCluster(urls map[int64]string) {
 		}
 		redisClients[index] = redisClient
 	}
-
 }
 
 func Client() *redis.Client {
 	return client
 }
 
-func ClusterClient(index int64) *redis.Client {
-	return redisClients[index]
+func ClusterClient(index uint32) *redis.Client {
+	fmt.Println(index, "======", index%clusterSize)
+	return redisClients[index%clusterSize]
 }
