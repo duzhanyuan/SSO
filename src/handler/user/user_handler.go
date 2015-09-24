@@ -24,10 +24,11 @@ func performance(c *gin.Context) {
 		Nodes []int64 `json:"nodes"`
 	}
 	nodes := monitor.GetAllData()
-	data := Data{
-		Nodes: nodes,
-	}
-	ginutil.ResponseJSONSuccess(c, data)
+	/*data := Data{*/
+	//Nodes: nodes,
+	/*}*/
+	c.JSON(200, gin.H{"nodes": data})
+	//ginutil.ResponseJSONSuccess(c, data)
 }
 
 func register(c *gin.Context) {
