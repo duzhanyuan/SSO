@@ -36,6 +36,9 @@ func GenTimestamp(key []byte) string {
 }
 
 func CheckTimestamp(timestamp_str string, key []byte) bool {
+	if timestamp_str == "" || key == nil || len(key) == 0 {
+		return false
+	}
 	c, _ := rc4.NewCipher(key)
 	timestamp_bytes, _ := hex.DecodeString(timestamp_str)
 	c.XORKeyStream(timestamp_bytes, timestamp_bytes)
