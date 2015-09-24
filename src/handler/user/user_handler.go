@@ -27,7 +27,7 @@ func performance(c *gin.Context) {
 	/*data := Data{*/
 	//Nodes: nodes,
 	/*}*/
-	c.JSON(200, gin.H{"nodes": data})
+	c.JSON(200, gin.H{"nodes": nodes})
 	//ginutil.ResponseJSONSuccess(c, data)
 }
 
